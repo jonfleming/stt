@@ -2,8 +2,8 @@ import argparse
 import os
 import wave
 import sys
-
 import pyaudio
+from spinner import Spinner
 from google.cloud import speech
 
 def record(duration, filename, fs=16000, channels=1, frames_per_buffer=1024):
@@ -58,6 +58,65 @@ def transcribe_file(speech_file, fs=16000, language_code='en-US'):
     for result in response.results:
         transcript = result.alternatives[0].transcript
         print(f'Transcript: {transcript}')
+    
+def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_code='en-US'):
+    """
+    Continuously record audio from microphone and stream to Google Cloud Speech-to-Text.
+    Press Ctrl+C to stop streaming.
+    """
+    spinner = Spinner("")
+    spinner.start()
+    client = speech.SpeechClient()
+    config = speech.RecognitionConfig(
+        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+        sample_rate_hertz=fs,
+        language_code=language_code,
+    )
+    streaming_config = speech.StreamingRecognitionConfig(
+        config=config,
+        interim_results=True,
+    )
+    pa = pyaudio.PyAudio()
+    try:
+        stream = pa.open(
+            format=pyaudio.paInt16,
+            channels=channels,
+            rate=fs,
+            input=True,
+            frames_per_buffer=frames_per_buffer,
+        )
+    except Exception as e:
+        print(f'Could not open microphone stream: {e}')
+        pa.terminate()
+        return
+
+    print('Streaming... Press Ctrl+C to stop.')
+
+    def request_generator():
+        while True:
+            try:
+                data = stream.read(frames_per_buffer, exception_on_overflow=False)
+            except KeyboardInterrupt:
+                return
+            yield speech.StreamingRecognizeRequest(audio_content=data)
+
+    requests = request_generator()
+    try:
+        # streaming_recognize expects positional args: (streaming_config, requests)
+        responses = client.streaming_recognize(streaming_config, requests)
+        for response in responses:
+            for result in response.results:
+                transcript = result.alternatives[0].transcript
+                if result.is_final:
+                    print(f'Transcript: {transcript}')
+                else:
+                    print(f'Partial: {transcript}', end='\r')
+    except KeyboardInterrupt:
+        print('\nStreaming stopped.')
+    finally:
+        stream.stop_stream()
+        stream.close()
+        pa.terminate()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -69,14 +128,19 @@ def main():
                         help='Output WAV file name')
     parser.add_argument('--language', '-l', type=str, default='en-US',
                         help='Language code (e.g., en-US)')
+    parser.add_argument('--stream', '-s', action='store_true',
+                        help='Enable continuous streaming recognition')
     args = parser.parse_args()
 
     if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
         print('Error: The GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.')
         sys.exit(1)
 
-    record(args.duration, args.file)
-    transcribe_file(args.file, language_code=args.language)
+    if args.stream:
+        transcribe_streaming(language_code=args.language)
+    else:
+        record(args.duration, args.file)
+        transcribe_file(args.file, language_code=args.language)
 
 if __name__ == '__main__':
     main()
