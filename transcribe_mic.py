@@ -23,11 +23,6 @@ def process_text(text):
     elif "space" in text:
         print("Pressing Space...")
         pyautogui.hotkey("space")
-    elif "login" in text or "log in" in text:
-        pyautogui.typewrite(os.getenv("USERNAME"))
-        pyautogui.hotkey("tab")
-        pyautogui.typewrite(os.getenv("PASSWORD"))
-        pyautogui.hotkey("enter")
     else:
         pyautogui.typewrite(str(text))
 
@@ -160,8 +155,7 @@ def main():
 
     if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
         print('Error: The GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.')
-        sys.exit(1)
-
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/home/jon/jonefleming-n8n-31f098b2ea64.json'
     if args.stream:
         transcribe_streaming(language_code=args.language)
     else:
