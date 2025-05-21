@@ -13,6 +13,9 @@ def process_text(text):
     if "enter" in text or "new line" in text:
         print("Pressing Enter...")
         pyautogui.hotkey("enter")
+    if "tab" in text or "next" in text:
+        print("Pressing Tab...")
+        pyautogui.hotkey("tab")
     elif "delete" in text or "backspace" in text:
         print("Deleting...")
 #        pyautogui.hotkey("numlock") # Ensure numlock is off
