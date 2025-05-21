@@ -5,6 +5,31 @@ import sys
 import pyaudio
 from spinner import Spinner
 from google.cloud import speech
+import pyautogui
+
+def process_text(text):
+    print("heard:", str(text))
+
+    if "enter" in text or "new line" in text:
+        print("Pressing Enter...")
+        pyautogui.hotkey("enter")
+    elif "delete" in text or "backspace" in text:
+        print("Deleting...")
+#        pyautogui.hotkey("numlock") # Ensure numlock is off
+        pyautogui.hotkey('home')
+        pyautogui.hotkey('shift', 'down')
+        pyautogui.hotkey("backspace")
+#        pyautogui.hotkey("numlock") # Turn numlock back on
+    elif "space" in text:
+        print("Pressing Space...")
+        pyautogui.hotkey("space")
+    elif "login" in text or "log in" in text:
+        pyautogui.typewrite(os.getenv("USERNAME"))
+        pyautogui.hotkey("tab")
+        pyautogui.typewrite(os.getenv("PASSWORD"))
+        pyautogui.hotkey("enter")
+    else:
+        pyautogui.typewrite(str(text))
 
 def record(duration, filename, fs=16000, channels=1, frames_per_buffer=1024):
     pa = pyaudio.PyAudio()
@@ -65,7 +90,6 @@ def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_
     Press Ctrl+C to stop streaming.
     """
     spinner = Spinner("")
-    spinner.start()
     client = speech.SpeechClient()
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
@@ -91,6 +115,7 @@ def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_
         return
 
     print('Streaming... Press Ctrl+C to stop.')
+    spinner.start()
 
     def request_generator():
         while True:
@@ -108,9 +133,10 @@ def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_
             for result in response.results:
                 transcript = result.alternatives[0].transcript
                 if result.is_final:
-                    print(f'Transcript: {transcript}')
+                    process_text(transcript)
                 else:
-                    print(f'Partial: {transcript}', end='\r')
+                    pass
+                    # print(f'Partial: {transcript}', end='\r')
     except KeyboardInterrupt:
         print('\nStreaming stopped.')
     finally:
