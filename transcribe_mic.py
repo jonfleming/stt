@@ -49,12 +49,12 @@ def process_text_gui(text):
     else:
         pyautogui.typewrite(str(text))
 
-def record(duration, filename, fs=16000, channels=1, frames_per_buffer=1024):
     pa = pyaudio.PyAudio()
+def record(duration, filename, sr=16000, channels=1, frames_per_buffer=1024):
     try:
         stream = pa.open(format=pyaudio.paInt16,
                         channels=channels,
-                        rate=fs,
+                        rate=sr,
                         input=True,
                         frames_per_buffer=frames_per_buffer)
     except Exception as e:
@@ -78,11 +78,11 @@ def record(duration, filename, fs=16000, channels=1, frames_per_buffer=1024):
     wf = wave.open(filename, 'wb')
     wf.setnchannels(channels)
     wf.setsampwidth(pa.get_sample_size(pyaudio.paInt16))
-    wf.setframerate(fs)
+    wf.setframerate(sr)
     wf.writeframes(b''.join(frames))
     wf.close()
 
-def transcribe_file(speech_file, fs=16000, language_code='en-US'):
+def transcribe_file(speech_file, sr=16000, language_code='en-US'):
     client = speech.SpeechClient()
 
     with open(speech_file, 'rb') as f:
@@ -91,7 +91,7 @@ def transcribe_file(speech_file, fs=16000, language_code='en-US'):
     audio = speech.RecognitionAudio(content=content)
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=fs,
+        sample_rate_hertz=sr,
         language_code=language_code,
     )
 
@@ -177,7 +177,7 @@ def main():
     parser.add_argument('--sample', '-sr', type=str, default="44100",
                         help='Recording sample rate in Hz')
     parser.add_argument('--gui', '-g', action='store_true',
-                        help='Enable GUI automation with PyAutoGUI')
+                        help='Enable keyboard automation with PyAutoGUI')
     args = parser.parse_args()
 
     callback_fn = process_text_gui if args.gui else process_text
@@ -185,8 +185,8 @@ def main():
     if args.stream:
         transcribe_streaming(sr=int(args.sample), language_code=args.language, callback=callback_fn)
     else:
-        record(args.duration, args.file)
-        transcribe_file(args.file, language_code=args.language)
+        record(sr=int(args.sample), duration=args.duration, filename=args.file)
+        transcribe_file(sr=int(args.sample), speech_file=args.file, language_code=args.language)
 
 if __name__ == '__main__':
     main()
