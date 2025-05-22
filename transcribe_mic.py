@@ -66,7 +66,7 @@ def record(duration, filename, sr=16000, channels=1, frames_per_buffer=1024):
     print(f'Recording {duration} seconds...')
     frames = []
 
-    for _ in range(int(fs / frames_per_buffer * duration)):
+    for _ in range(int(sr / frames_per_buffer * duration)):
         data = stream.read(frames_per_buffer)
         frames.append(data)
 
