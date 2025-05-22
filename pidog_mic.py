@@ -60,7 +60,7 @@ def execute(text):
         stretch(my_dog)        
     
 def main():
-    transcribe_streaming(fs=44100,callback=process_text)
+    transcribe_streaming(sr=44100,callback=process_text)
 
 
 if __name__ == '__main__':

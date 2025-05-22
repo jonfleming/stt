@@ -89,7 +89,7 @@ def transcribe_file(speech_file, fs=16000, language_code='en-US'):
         transcript = result.alternatives[0].transcript
         print(f'Transcript: {transcript}')
     
-def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_code='en-US', callback=process_text):
+def transcribe_streaming(sr=16000, channels=1, frames_per_buffer=1024, language_code='en-US', callback=process_text):
     """
     Continuously record audio from microphone and stream to Google Cloud Speech-to-Text.
     Press Ctrl+C to stop streaming.
@@ -98,7 +98,7 @@ def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_
     client = speech.SpeechClient()
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=fs,
+        sample_rate_hertz=sr,
         language_code=language_code,
     )
     streaming_config = speech.StreamingRecognitionConfig(
@@ -110,7 +110,7 @@ def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_
         stream = pa.open(
             format=pyaudio.paInt16,
             channels=channels,
-            rate=fs,
+            rate=sr,
             input=True,
             frames_per_buffer=frames_per_buffer,
         )
@@ -161,10 +161,12 @@ def main():
                         help='Language code (e.g., en-US)')
     parser.add_argument('--stream', '-s', action='store_true',
                         help='Enable continuous streaming recognition')
+    parser.add_argument('--sample', '-sr', type=str, default="44100",
+                        help='Recording sample rate in Hz')
     args = parser.parse_args()
 
     if args.stream:
-        transcribe_streaming(language_code=args.language)
+        transcribe_streaming(sr=int(args.sample), language_code=args.language)
     else:
         record(args.duration, args.file)
         transcribe_file(args.file, language_code=args.language)
