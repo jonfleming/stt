@@ -67,8 +67,15 @@ def record(duration, filename, sr=16000, channels=1, frames_per_buffer=1024):
     frames = []
 
     for _ in range(int(sr / frames_per_buffer * duration)):
-        data = stream.read(frames_per_buffer)
-        frames.append(data)
+        try:
+            data = stream.read(frames_per_buffer, exception_on_overflow=False)
+            frames.append(data)
+        except OSError as e:
+            if e.errno == -9981:  # Input overflow
+                print("Warning: Input overflow occurred, some audio data may have been lost")
+                continue
+            else:
+                raise e
 
     print('Recording complete.')
 
