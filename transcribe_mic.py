@@ -123,7 +123,7 @@ def transcribe_streaming(sr=16000, channels=1, frames_per_buffer=1024, language_
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=sr,
         language_code=language_code,
-        speech_adaptation=speech_adaptation,
+        adaptation=speech_adaptation,
     )
 
     streaming_config = speech.StreamingRecognitionConfig(
@@ -184,15 +184,18 @@ def get_speech_adaptation(phrases_file):
     with open(phrases_file, 'r') as f:
         phrases = f.read().splitlines()
     
-    phrases = [phrase.strip() for phrase in phrases if phrase.strip()]
+    phrases = [{'value': phrase.strip(), 'boost': 10} for phrase in phrases if phrase.strip()]
     
     if not phrases:
         print(f'Error: No valid phrases found in {phrases_file}.')
         sys.exit(1)
 
+    # Create a PhraseSet with the phrases
+    phrase_set = speech.PhraseSet(phrases=phrases)
     
+    # Create SpeechAdaptation with the PhraseSet
     adaptation = speech.SpeechAdaptation(
-        phrase_hints=phrases
+        phrase_sets=[phrase_set]
     )
 
     return adaptation
@@ -206,8 +209,8 @@ def main():
                         help='Recording duration in seconds')
     parser.add_argument('--file', '-f', type=str, default='output.wav',
                         help='Output WAV file name')
-    parser.add_argument('--phrases', '-p', type=str, default='phrases.txt',
-                        help='Speedch adaptation phrases file')
+    parser.add_argument('--phrases', '-p', type=str, default=None,
+                        help='Speech adaptation phrases file')
     parser.add_argument('--language', '-l', type=str, default='en-US',
                         help='Language code (e.g., en-US)')
     parser.add_argument('--stream', '-s', action='store_true',

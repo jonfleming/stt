@@ -22,7 +22,7 @@ def execute(text):
         scratch(my_dog)
     if ("shake" in text):
         hand_shake(my_dog)
-    if ("five" in text):
+    if ("five" in text) or ("5" in text):
         high_five(my_dog)
     if ("pant" in text):
         pant(my_dog)
