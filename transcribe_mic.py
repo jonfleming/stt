@@ -8,6 +8,7 @@ from google.cloud import speech
 
 # PyAutoGUI will be imported only if needed
 pyautogui = None
+speech_adaptation = None
 
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
     print('Error: The GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.')
@@ -90,7 +91,7 @@ def record(duration, filename, sr=16000, channels=1, frames_per_buffer=1024):
     wf.writeframes(b''.join(frames))
     wf.close()
 
-def transcribe_file(speech_file, sr=16000, language_code='en-US'):
+def transcribe_file(speech_file, sr=16000, language_code='en-US', speech_adaptation=None):
     client = speech.SpeechClient()
 
     with open(speech_file, 'rb') as f:
@@ -101,6 +102,7 @@ def transcribe_file(speech_file, sr=16000, language_code='en-US'):
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=sr,
         language_code=language_code,
+        adaptation=speech_adaptation,
     )
 
     print('Transcribing...')
@@ -110,7 +112,7 @@ def transcribe_file(speech_file, sr=16000, language_code='en-US'):
         transcript = result.alternatives[0].transcript
         print(f'Transcript: {transcript}')
     
-def transcribe_streaming(sr=16000, channels=1, frames_per_buffer=1024, language_code='en-US', callback=process_text_gui):
+def transcribe_streaming(sr=16000, channels=1, frames_per_buffer=1024, language_code='en-US', callback=process_text_gui, speech_adaptation=None):
     """
     Continuously record audio from microphone and stream to Google Cloud Speech-to-Text.
     Press Ctrl+C to stop streaming.
@@ -121,11 +123,14 @@ def transcribe_streaming(sr=16000, channels=1, frames_per_buffer=1024, language_
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=sr,
         language_code=language_code,
+        speech_adaptation=speech_adaptation,
     )
+
     streaming_config = speech.StreamingRecognitionConfig(
         config=config,
         interim_results=True,
     )
+
     pa = pyaudio.PyAudio()
     try:
         stream = pa.open(
@@ -170,7 +175,30 @@ def transcribe_streaming(sr=16000, channels=1, frames_per_buffer=1024, language_
         stream.close()
         pa.terminate()
 
+def get_speech_adaptation(phrases_file):
+    # read phrases from file
+    if not os.path.exists(phrases_file):
+        print(f'Error: Phrases file {phrases_file} does not exist.')
+        sys.exit(1)
+    
+    with open(phrases_file, 'r') as f:
+        phrases = f.read().splitlines()
+    
+    phrases = [phrase.strip() for phrase in phrases if phrase.strip()]
+    
+    if not phrases:
+        print(f'Error: No valid phrases found in {phrases_file}.')
+        sys.exit(1)
+
+    
+    adaptation = speech.SpeechAdaptation(
+        phrase_hints=phrases
+    )
+
+    return adaptation
+
 def main():
+    global speech_adaptation
     parser = argparse.ArgumentParser(
         description='Record audio from microphone and transcribe using Google Cloud Speech-to-Text'
     )
@@ -178,6 +206,8 @@ def main():
                         help='Recording duration in seconds')
     parser.add_argument('--file', '-f', type=str, default='output.wav',
                         help='Output WAV file name')
+    parser.add_argument('--phrases', '-p', type=str, default='phrases.txt',
+                        help='Speedch adaptation phrases file')
     parser.add_argument('--language', '-l', type=str, default='en-US',
                         help='Language code (e.g., en-US)')
     parser.add_argument('--stream', '-s', action='store_true',
@@ -186,15 +216,16 @@ def main():
                         help='Recording sample rate in Hz')
     parser.add_argument('--gui', '-g', action='store_true',
                         help='Enable keyboard automation with PyAutoGUI')
-    args = parser.parse_args()
 
+    args = parser.parse_args()
     callback_fn = process_text_gui if args.gui else process_text
+    speech_adaptation = get_speech_adaptation(args.phrases) if args.phrases else None
 
     if args.stream:
-        transcribe_streaming(sr=int(args.sample), language_code=args.language, callback=callback_fn)
+        transcribe_streaming(sr=int(args.sample), language_code=args.language, callback=callback_fn, speech_adaptation=speech_adaptation)
     else:
         record(sr=int(args.sample), duration=args.duration, filename=args.file)
-        transcribe_file(sr=int(args.sample), speech_file=args.file, language_code=args.language)
+        transcribe_file(sr=int(args.sample), speech_file=args.file, language_code=args.language, speech_adaptation=speech_adaptation)
 
 if __name__ == '__main__':
     main()

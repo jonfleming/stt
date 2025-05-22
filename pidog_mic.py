@@ -1,6 +1,6 @@
 from pidog import Pidog
 from preset_actions import scratch, hand_shake, high_five, pant, body_twisting, bark_action, shake_head_smooth, bark, push_up, howling, attack_posture, lick_hand, feet_shake, sit_2_stand, nod, think, recall, alert, surprise,  stretch
-from transcribe_mic import transcribe_streaming
+from transcribe_mic import transcribe_streaming, get_speech_adaptation
 
 # Import Pidog class
 from pidog import Pidog
@@ -60,7 +60,8 @@ def execute(text):
         stretch(my_dog)        
     
 def main():
-    transcribe_streaming(sr=44100,callback=process_text)
+    adaptation = get_speech_adaptation('phrases.txt')
+    transcribe_streaming(sr=44100, callback=process_text, speech_adaptation=adaptation)
 
 
 if __name__ == '__main__':
