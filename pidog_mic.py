@@ -62,7 +62,7 @@ def execute(text):
     if ("stretch" in text):
         stretch(my_dog)        
     
-def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_code='en-US'):
+def transcribe_streaming(fs=44100, channels=1, frames_per_buffer=1024, language_code='en-US'):
     """
     Continuously record audio from microphone and stream to Google Cloud Speech-to-Text.
     Press Ctrl+C to stop streaming.
