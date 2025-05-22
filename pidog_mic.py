@@ -4,7 +4,6 @@ import os
 import wave
 import sys
 import pyaudio
-from spinner import Spinner
 from google.cloud import speech
 from preset_actions import scratch, hand_shake, high_five, pant, body_twisting, bark_action, shake_head_smooth, bark, push_up, howling, attack_posture, lick_hand, feet_shake, sit_2_stand, nod, think, recall, alert, surprise,  stretch
 
@@ -68,7 +67,6 @@ def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_
     Continuously record audio from microphone and stream to Google Cloud Speech-to-Text.
     Press Ctrl+C to stop streaming.
     """
-    spinner = Spinner("")
     client = speech.SpeechClient()
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
@@ -94,7 +92,6 @@ def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_
         return
 
     print('Streaming... Press Ctrl+C to stop.')
-    spinner.start()
 
     def request_generator():
         while True:
