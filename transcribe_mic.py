@@ -49,8 +49,9 @@ def process_text_gui(text):
     else:
         pyautogui.typewrite(str(text))
 
-    pa = pyaudio.PyAudio()
 def record(duration, filename, sr=16000, channels=1, frames_per_buffer=1024):
+    pa = pyaudio.PyAudio()
+
     try:
         stream = pa.open(format=pyaudio.paInt16,
                         channels=channels,
