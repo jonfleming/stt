@@ -5,13 +5,26 @@ import sys
 import pyaudio
 from spinner import Spinner
 from google.cloud import speech
-import pyautogui
+
+# PyAutoGUI will be imported only if needed
+pyautogui = None
 
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
     print('Error: The GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.')
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/home/jon/jonefleming-n8n-31f098b2ea64.json'
 
 def process_text(text):
+    print("heard:", str(text))
+
+def process_text_gui(text):
+    global pyautogui
+    if pyautogui is None:
+        try:
+            import pyautogui
+        except ImportError:
+            print("Warning: pyautogui not installed. GUI automation disabled.")
+            return process_text(text)
+
     print("heard:", str(text))
 
     if "enter" in text or "new line" in text:
@@ -89,7 +102,7 @@ def transcribe_file(speech_file, fs=16000, language_code='en-US'):
         transcript = result.alternatives[0].transcript
         print(f'Transcript: {transcript}')
     
-def transcribe_streaming(sr=16000, channels=1, frames_per_buffer=1024, language_code='en-US', callback=process_text):
+def transcribe_streaming(sr=16000, channels=1, frames_per_buffer=1024, language_code='en-US', callback=process_text_gui):
     """
     Continuously record audio from microphone and stream to Google Cloud Speech-to-Text.
     Press Ctrl+C to stop streaming.
@@ -163,10 +176,14 @@ def main():
                         help='Enable continuous streaming recognition')
     parser.add_argument('--sample', '-sr', type=str, default="44100",
                         help='Recording sample rate in Hz')
+    parser.add_argument('--gui', '-g', action='store_true',
+                        help='Enable GUI automation with PyAutoGUI')
     args = parser.parse_args()
 
+    callback_fn = process_text_gui if args.gui else process_text
+
     if args.stream:
-        transcribe_streaming(sr=int(args.sample), language_code=args.language)
+        transcribe_streaming(sr=int(args.sample), language_code=args.language, callback=callback_fn)
     else:
         record(args.duration, args.file)
         transcribe_file(args.file, language_code=args.language)
