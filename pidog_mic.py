@@ -21,6 +21,8 @@ def process_text(text):
     execute(text)
     
 def execute(text):
+    if ("sit" in text):
+        my_dog.do_action('sit', speed=80)
     if ("scratch" in text):
         scratch(my_dog)
     if ("shake" in text):
@@ -33,12 +35,12 @@ def execute(text):
         body_twisting(my_dog)
     if ("speak" in text):
         bark_action(my_dog)
+        bark(my_dog)
     if ("bark" in text):
         bark_action(my_dog)
+        bark(my_dog)
     if ("no" in text):
         shake_head_smooth(my_dog)
-    if ("bark" in text):
-        bark(my_dog)
     if ("up" in text):
         push_up(my_dog)
     if ("howl" in text):
