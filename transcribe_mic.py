@@ -7,15 +7,22 @@ from spinner import Spinner
 from google.cloud import speech
 import pyautogui
 
+if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
+    print('Error: The GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.')
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/home/jon/jonefleming-n8n-31f098b2ea64.json'
+
 def process_text(text):
     print("heard:", str(text))
 
     if "enter" in text or "new line" in text:
         print("Pressing Enter...")
         pyautogui.hotkey("enter")
-    if "tab" in text or "next" in text:
+    elif "tab" in text or "next" in text:
         print("Pressing Tab...")
         pyautogui.hotkey("tab")
+    elif "period" in text or "next" in text:
+        print("Pressing period...")
+        pyautogui.typewrite(". ")
     elif "delete" in text or "backspace" in text:
         print("Deleting...")
 #        pyautogui.hotkey("numlock") # Ensure numlock is off
@@ -82,7 +89,7 @@ def transcribe_file(speech_file, fs=16000, language_code='en-US'):
         transcript = result.alternatives[0].transcript
         print(f'Transcript: {transcript}')
     
-def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_code='en-US'):
+def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_code='en-US', callback=process_text):
     """
     Continuously record audio from microphone and stream to Google Cloud Speech-to-Text.
     Press Ctrl+C to stop streaming.
@@ -131,7 +138,7 @@ def transcribe_streaming(fs=16000, channels=1, frames_per_buffer=1024, language_
             for result in response.results:
                 transcript = result.alternatives[0].transcript
                 if result.is_final:
-                    process_text(transcript)
+                    callback(transcript)
                 else:
                     pass
                     # print(f'Partial: {transcript}', end='\r')
@@ -156,9 +163,6 @@ def main():
                         help='Enable continuous streaming recognition')
     args = parser.parse_args()
 
-    if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-        print('Error: The GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.')
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/home/jon/jonefleming-n8n-31f098b2ea64.json'
     if args.stream:
         transcribe_streaming(language_code=args.language)
     else:
